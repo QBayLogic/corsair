@@ -4,7 +4,8 @@ module tb_ro;
 
 // Test environment with DUT and bridge to LocalBus
 `include "env.svh"
-
+`define DBG 1
+    
 // Test body
 int errors = 0;
 logic [ADDR_W-1:0] addr;
@@ -14,23 +15,35 @@ logic [STRB_W-1:0] strb;
 task test_ro_i;
     $display("%0t, Start RO+I tests!", $time);
     addr = CSR_REGRO_ADDR;
+    `ifdef DBG
+        $display("address %0x", addr);
+    `endif
     // read
     mst.read(addr, data);
     if (data[CSR_REGRO_BFI_LSB+:CSR_REGRO_BFI_WIDTH] != 0)
+    begin    
         errors++;
+        $display("%0t, Expected 0, got %0x", $time, data);
+    end    
     // update hardware value
     @(posedge clk);
     csr_regro_bfi_in = 100;
     // read again
     mst.read(addr, data);
     if (data[CSR_REGRO_BFI_LSB+:CSR_REGRO_BFI_WIDTH] != 100)
+    begin    
         errors++;
+        $display("%0t, Expected 100, got %0x", $time, data);
+    end    
     // write has no effect
     data = 200 << CSR_REGRO_BFI_LSB;
     mst.write(addr, data);
     mst.read(addr, data);
     if (data[CSR_REGRO_BFI_LSB+:CSR_REGRO_BFI_WIDTH] != 100)
+    begin
         errors++;
+        $display("%0t, Expected 100, got %0x", $time, data);
+    end    
     $display("%0t, %0d errors", $time, errors);
 endtask
 
